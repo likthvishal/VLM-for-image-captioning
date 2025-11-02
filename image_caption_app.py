@@ -192,17 +192,21 @@ def main():
             type=['jpg', 'jpeg', 'png'],
             help="Upload JPG, JPEG, or PNG images"
         )
-        
-        # Sample images option
-        use_sample = st.checkbox("Or use a sample image", value=False)
-        
-        if use_sample:
-            sample_dir = r"C:\Users\likit\Documents\projects\image captioning llm\Images"
-            if os.path.exists(sample_dir):
-                sample_images = [f for f in os.listdir(sample_dir) if f.endswith(('.jpg', '.jpeg', '.png'))]
-                if sample_images:
+
+        # Sample images option (only show if Images directory exists)
+        sample_dir = os.path.join(os.path.dirname(__file__), "Images")
+
+        if os.path.exists(sample_dir) and os.path.isdir(sample_dir):
+            sample_images = [f for f in os.listdir(sample_dir) if f.endswith(('.jpg', '.jpeg', '.png'))]
+
+            if sample_images:
+                use_sample = st.checkbox("Or use a sample image", value=False)
+
+                if use_sample:
                     import random
-                    selected_sample = st.selectbox("Select sample image", random.sample(sample_images, min(10, len(sample_images))))
+                    # Show a random selection of up to 10 sample images
+                    display_samples = random.sample(sample_images, min(10, len(sample_images)))
+                    selected_sample = st.selectbox("Select sample image", display_samples)
                     sample_path = os.path.join(sample_dir, selected_sample)
                     uploaded_file = open(sample_path, 'rb')
         

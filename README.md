@@ -582,10 +582,69 @@ jupyter notebook finetuned_blip.ipynb
 
 ### Deployment
 - [x] **Streamlit Cloud deployment** (Live demo available)
+- [x] **Hugging Face Hub integration** for model hosting and sharing
 - [ ] Docker containerization
 - [ ] Model quantization for faster inference
 - [ ] ONNX export for cross-platform compatibility
-- [ ] Hugging Face Hub integration for easy model sharing
+
+## Uploading Fine-tuned Model to Hugging Face Hub
+
+To make your fine-tuned model accessible in the deployed Streamlit app, upload it to Hugging Face Hub:
+
+### Prerequisites
+
+1. **Create Hugging Face Account:**
+   - Sign up at [huggingface.co](https://huggingface.co)
+   - Go to [Settings → Access Tokens](https://huggingface.co/settings/tokens)
+   - Create a new token with **write** permissions
+   - Copy the token (you'll need it shortly)
+
+2. **Install Hugging Face Hub:**
+```bash
+pip install huggingface_hub
+```
+
+### Upload Process
+
+The repository includes an automated upload script:
+
+1. **Run the Upload Script:**
+```bash
+python upload_to_huggingface.py
+```
+
+2. **Follow the Prompts:**
+   - Enter your Hugging Face access token when prompted
+   - Confirm the upload when asked
+   - Wait for the upload to complete (may take 5-10 minutes depending on model size)
+
+3. **Verify Upload:**
+   - Visit `https://huggingface.co/[your-username]/blip-finetuned-flickr8k`
+   - Confirm all model files are present
+   - Your model is now publicly accessible!
+
+### Manual Upload (Alternative)
+
+If you prefer manual upload:
+
+```bash
+# Login to Hugging Face
+huggingface-cli login
+
+# Upload model directory
+huggingface-cli upload blip-finetuned-flickr8k ./blip_finetuned_best
+```
+
+### Update Streamlit App
+
+After uploading to Hugging Face Hub, the app will automatically:
+1. Try to load from Hugging Face Hub first
+2. Fall back to local model if available
+3. Use pretrained BLIP as final fallback
+
+**Model will be loaded from:** `likthvishal/blip-finetuned-flickr8k`
+
+Update the model path in [image_caption_app.py:70](image_caption_app.py#L70) if you used a different repository name.
 
 ## Deployment Guide
 
@@ -593,31 +652,33 @@ jupyter notebook finetuned_blip.ipynb
 
 The easiest way to deploy this application:
 
-1. **Fork/Push to GitHub:**
+1. **Upload Model to Hugging Face Hub:**
+   - Follow the steps in [Uploading Fine-tuned Model to Hugging Face Hub](#uploading-fine-tuned-model-to-hugging-face-hub)
+   - This enables the deployed app to access your fine-tuned model
+
+2. **Fork/Push to GitHub:**
    - Ensure your code is pushed to GitHub (already done!)
    - Repository: https://github.com/likthvishal/VLM-for-image-captioning
 
-2. **Connect to Streamlit Cloud:**
+3. **Connect to Streamlit Cloud:**
    - Go to [share.streamlit.io](https://share.streamlit.io)
    - Sign in with GitHub
    - Click "New app"
 
-3. **Configure Deployment:**
+4. **Configure Deployment:**
    ```
    Repository: likthvishal/VLM-for-image-captioning
    Branch: main
    Main file path: image_caption_app.py
    ```
 
-4. **Deploy:**
+5. **Deploy:**
    - Click "Deploy!"
    - Streamlit Cloud will automatically install dependencies from `requirements.txt`
    - Your app will be live at: `https://[your-app-name].streamlit.app`
+   - The app will load the fine-tuned model from Hugging Face Hub
 
-**Note:** The fine-tuned model files are excluded from the repository due to size. The app will use the pretrained BLIP model by default. To use the fine-tuned model:
-- Upload model files to Hugging Face Hub
-- Update the app to load from Hugging Face
-- Or use the pretrained model for demonstration
+**Note:** The fine-tuned model files are excluded from the Git repository due to size constraints. By hosting on Hugging Face Hub, the deployed app can still access your fine-tuned model!
 
 ### Alternative: Run Locally
 

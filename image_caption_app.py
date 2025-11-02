@@ -57,7 +57,7 @@ st.markdown("""
 def load_model(model_choice):
     """Load BLIP model (cached for performance)"""
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    
+
     if model_choice == "Pretrained BLIP":
         processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-base")
         model = BlipForConditionalGeneration.from_pretrained(
@@ -65,18 +65,29 @@ def load_model(model_choice):
             use_safetensors=True
         ).to(device)
     else:  # Fine-tuned model
-        model_path = "blip_finetuned_best"
-        if os.path.exists(model_path):
-            processor = BlipProcessor.from_pretrained(model_path)
-            model = BlipForConditionalGeneration.from_pretrained(model_path).to(device)
-        else:
-            st.warning("Fine-tuned model not found. Using pretrained model.")
-            processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-base")
-            model = BlipForConditionalGeneration.from_pretrained(
-                "Salesforce/blip-image-captioning-base",
-                use_safetensors=True
-            ).to(device)
-    
+        # Try to load from Hugging Face Hub first, then fall back to local path
+        model_path_local = "blip_finetuned_best"
+        model_path_hf = "likthvishal/blip-finetuned-flickr8k"  # Update this after uploading to HF
+
+        try:
+            # Try loading from Hugging Face Hub
+            processor = BlipProcessor.from_pretrained(model_path_hf)
+            model = BlipForConditionalGeneration.from_pretrained(model_path_hf).to(device)
+            st.success(f"✅ Loaded fine-tuned model from Hugging Face Hub")
+        except Exception:
+            # Fall back to local path
+            if os.path.exists(model_path_local):
+                processor = BlipProcessor.from_pretrained(model_path_local)
+                model = BlipForConditionalGeneration.from_pretrained(model_path_local).to(device)
+                st.info("📁 Loaded fine-tuned model from local directory")
+            else:
+                st.warning("⚠️ Fine-tuned model not found on Hugging Face or locally. Using pretrained model.")
+                processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-base")
+                model = BlipForConditionalGeneration.from_pretrained(
+                    "Salesforce/blip-image-captioning-base",
+                    use_safetensors=True
+                ).to(device)
+
     return processor, model, device
 
 

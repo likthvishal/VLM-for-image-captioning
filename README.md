@@ -245,7 +245,11 @@ python -c "import torch; import transformers; import streamlit; print('All depen
 
 ## Usage
 
-### Running the Web Application
+### Live Demo
+
+🚀 **Try the live application:** [Image Captioning Demo on Streamlit Cloud](https://vlm-image-captioning.streamlit.app)
+
+### Running Locally
 
 ```bash
 streamlit run image_caption_app.py
@@ -577,10 +581,61 @@ jupyter notebook finetuned_blip.ipynb
 - [ ] Automated model evaluation pipeline
 
 ### Deployment
+- [x] **Streamlit Cloud deployment** (Live demo available)
 - [ ] Docker containerization
 - [ ] Model quantization for faster inference
 - [ ] ONNX export for cross-platform compatibility
 - [ ] Hugging Face Hub integration for easy model sharing
+
+## Deployment Guide
+
+### Deploy to Streamlit Cloud (Recommended)
+
+The easiest way to deploy this application:
+
+1. **Fork/Push to GitHub:**
+   - Ensure your code is pushed to GitHub (already done!)
+   - Repository: https://github.com/likthvishal/VLM-for-image-captioning
+
+2. **Connect to Streamlit Cloud:**
+   - Go to [share.streamlit.io](https://share.streamlit.io)
+   - Sign in with GitHub
+   - Click "New app"
+
+3. **Configure Deployment:**
+   ```
+   Repository: likthvishal/VLM-for-image-captioning
+   Branch: main
+   Main file path: image_caption_app.py
+   ```
+
+4. **Deploy:**
+   - Click "Deploy!"
+   - Streamlit Cloud will automatically install dependencies from `requirements.txt`
+   - Your app will be live at: `https://[your-app-name].streamlit.app`
+
+**Note:** The fine-tuned model files are excluded from the repository due to size. The app will use the pretrained BLIP model by default. To use the fine-tuned model:
+- Upload model files to Hugging Face Hub
+- Update the app to load from Hugging Face
+- Or use the pretrained model for demonstration
+
+### Alternative: Run Locally
+
+For local deployment with fine-tuned model:
+
+```bash
+# Clone repository
+git clone https://github.com/likthvishal/VLM-for-image-captioning.git
+cd VLM-for-image-captioning
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Add fine-tuned model files to blip_finetuned_best/ directory
+
+# Run application
+streamlit run image_caption_app.py
+```
 
 ## Acknowledgments
 
@@ -601,11 +656,11 @@ For questions, issues, or contributions, please visit the [GitHub repository](ht
 
 ## Project Highlights
 
-🎯 **Custom Fine-tuned Model:** 70+ epochs of training on Flickr8k dataset
-📊 **Quantitative Results:** 15-20% BLEU improvement over pretrained baseline
-🎨 **Rich Captions:** Detailed, context-aware descriptions of natural scenes
-💻 **Production Ready:** Complete training pipeline with checkpoint management
-🖥️ **Interactive Demo:** User-friendly Streamlit web interface
-📈 **Comprehensive Evaluation:** Multiple metrics and visualizations included
+**Custom Fine-tuned Model:** 70+ epochs of training on Flickr8k dataset
+**Quantitative Results:** 15-20% BLEU improvement over pretrained baseline
+**Rich Captions:** Detailed, context-aware descriptions of natural scenes
+**Production Ready:** Complete training pipeline with checkpoint management
+ **Interactive Demo:** User-friendly Streamlit web interface
+📈**Comprehensive Evaluation:** Multiple metrics and visualizations included
 
 **Built with PyTorch & Transformers | Fine-tuned BLIP Model | Interactive Streamlit UI**

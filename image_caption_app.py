@@ -91,28 +91,38 @@ def load_model(model_choice):
     return processor, model, device
 
 
-def generate_caption(image, processor, model, device, max_length=20, num_beams=1, temperature=1.0):
+def generate_caption(image, processor, model, device, max_length=20, num_beams=1, temperature=1.0, do_sample=False):
     """Generate caption for an image"""
     # Process image
     inputs = processor(image, return_tensors="pt").to(device)
-    
+
     # Generate caption
     with torch.no_grad():
-        if num_beams > 1:
+        if do_sample:
+            # Sampling-based generation for diverse outputs
             output = model.generate(
                 **inputs,
                 max_length=max_length,
-                num_beams=num_beams,
-                temperature=temperature
+                do_sample=True,
+                temperature=temperature,
+                top_k=50,
+                top_p=0.95,
+                num_beams=1
+            )
+        elif num_beams > 1:
+            # Beam search for high-quality single output
+            output = model.generate(
+                **inputs,
+                max_length=max_length,
+                num_beams=num_beams
             )
         else:
+            # Greedy decoding
             output = model.generate(
                 **inputs,
-                max_length=max_length,
-                temperature=temperature,
-                do_sample=True
+                max_length=max_length
             )
-    
+
     # Decode caption
     caption = processor.decode(output[0], skip_special_tokens=True)
     return caption
@@ -285,17 +295,43 @@ def main():
                         if st.checkbox("Generate Multiple Captions (3 variations)"):
                             with st.spinner("Generating variations..."):
                                 st.markdown("###  Caption Variations:")
-                                for i in range(3):
+
+                                # Generate diverse captions using sampling
+                                temperatures = [0.7, 1.0, 1.3]  # Different temperatures for diversity
+                                variations = []
+
+                                for temp in temperatures:
                                     varied_caption = generate_caption(
                                         image,
                                         processor,
                                         model,
                                         device,
                                         max_length=max_length,
-                                        num_beams=num_beams,
-                                        temperature=temperature + (i * 0.2)
+                                        temperature=temp,
+                                        do_sample=True  # Enable sampling for diversity
                                     )
-                                    st.markdown(f"**{i+1}.** {varied_caption}")
+
+                                    # Only add if it's different from previous captions
+                                    if varied_caption not in variations:
+                                        variations.append(varied_caption)
+                                        st.markdown(f"**{len(variations)}.** {varied_caption}")
+
+                                # If we didn't get enough unique variations, generate more
+                                attempts = 0
+                                while len(variations) < 3 and attempts < 5:
+                                    temp_variation = generate_caption(
+                                        image,
+                                        processor,
+                                        model,
+                                        device,
+                                        max_length=max_length,
+                                        temperature=1.5,
+                                        do_sample=True
+                                    )
+                                    if temp_variation not in variations:
+                                        variations.append(temp_variation)
+                                        st.markdown(f"**{len(variations)}.** {temp_variation}")
+                                    attempts += 1
 
                     except Exception as e:
                         st.error(f" Error generating caption: {str(e)}")

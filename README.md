@@ -642,9 +642,7 @@ After uploading to Hugging Face Hub, the app will automatically:
 2. Fall back to local model if available
 3. Use pretrained BLIP as final fallback
 
-**Model will be loaded from:** `likthvishal/blip-finetuned-flickr8k`
-
-Update the model path in [image_caption_app.py:70](image_caption_app.py#L70) if you used a different repository name.
+**Model will be loaded from:** `high-velo/blip-finetuned-flickr8k`
 
 ## Deployment Guide
 

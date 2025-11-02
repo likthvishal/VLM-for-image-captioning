@@ -67,7 +67,7 @@ def load_model(model_choice):
     else:  # Fine-tuned model
         # Try to load from Hugging Face Hub first, then fall back to local path
         model_path_local = "blip_finetuned_best"
-        model_path_hf = "likthvishal/blip-finetuned-flickr8k"  # Update this after uploading to HF
+        model_path_hf = "high-velo/blip-finetuned-flickr8k"
 
         try:
             # Try loading from Hugging Face Hub

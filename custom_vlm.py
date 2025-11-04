@@ -179,12 +179,17 @@ class CustomVLMProcessor:
             encoding.update(image_encoding)
 
         if text is not None:
+            # Extract padding and truncation from kwargs if present
+            padding = kwargs.pop('padding', True)
+            truncation = kwargs.pop('truncation', True)
+            max_length = kwargs.pop('max_length', 128)
+
             text_encoding = self.tokenizer(
                 text,
                 return_tensors=return_tensors,
-                padding=True,
-                truncation=True,
-                max_length=128,
+                padding=padding,
+                truncation=truncation,
+                max_length=max_length,
                 **kwargs
             )
             encoding.update(text_encoding)

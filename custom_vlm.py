@@ -100,11 +100,24 @@ class VisionLanguageModel(nn.Module):
         )
         combined_attention_mask = torch.cat([vision_attention_mask, attention_mask], dim=1)
 
+        # Adjust labels to account for vision tokens
+        # Prepend -100 (ignore_index) for vision token positions
+        if labels is not None:
+            vision_labels = torch.full(
+                (batch_size, self.num_vision_tokens),
+                fill_value=-100,
+                dtype=labels.dtype,
+                device=labels.device
+            )
+            combined_labels = torch.cat([vision_labels, labels], dim=1)
+        else:
+            combined_labels = None
+
         # Forward through GPT-2 decoder
         outputs = self.language_decoder(
             inputs_embeds=combined_embeds,
             attention_mask=combined_attention_mask,
-            labels=labels,
+            labels=combined_labels,
             return_dict=True
         )
 

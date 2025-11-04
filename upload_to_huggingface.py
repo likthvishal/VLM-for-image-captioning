@@ -13,20 +13,18 @@ def upload_model_to_hf():
     model_path = "blip_finetuned_best"
     repo_name = "blip-finetuned-flickr8k"  # You can change this name
 
-    print("=" * 70)
     print("BLIP Fine-tuned Model Upload to Hugging Face Hub")
-    print("=" * 70)
     print()
 
     # Check if model directory exists
     if not os.path.exists(model_path):
-        print(f"❌ Error: Model directory '{model_path}' not found!")
+        print(f"Error: Model directory '{model_path}' not found!")
         print(f"   Make sure your fine-tuned model is in the current directory.")
         return False
 
     # List model files
     model_files = os.listdir(model_path)
-    print(f"📁 Found model files in '{model_path}':")
+    print(f"Found model files in '{model_path}':")
     for file in model_files[:10]:  # Show first 10 files
         print(f"   - {file}")
     if len(model_files) > 10:
@@ -34,8 +32,7 @@ def upload_model_to_hf():
     print()
 
     # Get Hugging Face token
-    print("🔑 Hugging Face Authentication")
-    print("-" * 70)
+    print("Hugging Face Authentication")
     print("You need a Hugging Face account and access token:")
     print("1. Go to https://huggingface.co/settings/tokens")
     print("2. Create a new token with 'write' access")
@@ -48,9 +45,9 @@ def upload_model_to_hf():
         # Login to Hugging Face
         if token:
             login(token=token, add_to_git_credential=True)
-            print("✅ Successfully logged in to Hugging Face!")
+            print("Successfully logged in to Hugging Face!")
         else:
-            print("ℹ️  Using existing Hugging Face credentials...")
+            print("Using existing Hugging Face credentials...")
         print()
 
         # Get username
@@ -58,33 +55,32 @@ def upload_model_to_hf():
         user_info = api.whoami()
         username = user_info['name']
 
-        print(f"👤 Logged in as: {username}")
+        print(f"Logged in as: {username}")
         print()
 
         # Create repository ID
         repo_id = f"{username}/{repo_name}"
-        print(f"📦 Repository: {repo_id}")
+        print(f"Repository: {repo_id}")
         print()
 
         # Confirm upload
         confirm = input("Do you want to proceed with the upload? (yes/no): ").strip().lower()
         if confirm != 'yes':
-            print("❌ Upload cancelled.")
+            print("Upload cancelled.")
             return False
 
         print()
-        print("🚀 Starting upload...")
-        print("-" * 70)
+        print("Starting upload...")
 
         # Create repository (if it doesn't exist)
         try:
             create_repo(repo_id, exist_ok=True, repo_type="model")
-            print(f"✅ Repository '{repo_id}' is ready")
+            print(f"Repository '{repo_id}' is ready")
         except Exception as e:
-            print(f"ℹ️  Repository might already exist: {e}")
+            print(f"Repository might already exist: {e}")
 
         # Upload model files
-        print(f"📤 Uploading model files from '{model_path}'...")
+        print(f"Uploading model files from '{model_path}'...")
         api.upload_folder(
             folder_path=model_path,
             repo_id=repo_id,
@@ -93,11 +89,9 @@ def upload_model_to_hf():
         )
 
         print()
-        print("=" * 70)
-        print("✅ SUCCESS! Model uploaded to Hugging Face Hub")
-        print("=" * 70)
+        print("SUCCESS! Model uploaded to Hugging Face Hub")
         print()
-        print(f"🌐 Model URL: https://huggingface.co/{repo_id}")
+        print(f"Model URL: https://huggingface.co/{repo_id}")
         print()
         print("Next steps:")
         print(f"1. Visit https://huggingface.co/{repo_id} to view your model")
@@ -109,16 +103,14 @@ def upload_model_to_hf():
         # Save repo_id to a file for easy reference
         with open("huggingface_model_id.txt", "w") as f:
             f.write(repo_id)
-        print(f"💾 Model ID saved to 'huggingface_model_id.txt'")
+        print(f"Model ID saved to 'huggingface_model_id.txt'")
         print()
 
         return True
 
     except Exception as e:
         print()
-        print("=" * 70)
-        print("❌ ERROR during upload")
-        print("=" * 70)
+        print("ERROR during upload")
         print(f"Error: {str(e)}")
         print()
         print("Common issues:")

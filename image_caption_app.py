@@ -13,7 +13,6 @@ import os
 # Page configuration
 st.set_page_config(
     page_title="VLM Image Captioning",
-    page_icon="📸",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -73,15 +72,15 @@ def load_model(model_choice):
             # Try loading from Hugging Face Hub
             processor = BlipProcessor.from_pretrained(model_path_hf)
             model = BlipForConditionalGeneration.from_pretrained(model_path_hf).to(device)
-            st.success(f"✅ Loaded fine-tuned model from Hugging Face Hub")
+            st.success("Loaded fine-tuned model from Hugging Face Hub")
         except Exception:
             # Fall back to local path
             if os.path.exists(model_path_local):
                 processor = BlipProcessor.from_pretrained(model_path_local)
                 model = BlipForConditionalGeneration.from_pretrained(model_path_local).to(device)
-                st.info("📁 Loaded fine-tuned model from local directory")
+                st.info("Loaded fine-tuned model from local directory")
             else:
-                st.warning("⚠️ Fine-tuned model not found on Hugging Face or locally. Using pretrained model.")
+                st.warning("Fine-tuned model not found on Hugging Face or locally. Using pretrained model.")
                 processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-base")
                 model = BlipForConditionalGeneration.from_pretrained(
                     "Salesforce/blip-image-captioning-base",
@@ -135,7 +134,7 @@ def main():
     
     # Sidebar
     with st.sidebar:
-        st.header(" Settings")
+        st.header("Settings")
         
         # Model selection
         model_choice = st.selectbox(
@@ -147,7 +146,7 @@ def main():
         st.markdown("---")
         
         # Advanced settings
-        with st.expander("🔧 Advanced Settings"):
+        with st.expander("Advanced Settings"):
             max_length = st.slider(
                 "Max Caption Length",
                 min_value=10,
@@ -194,7 +193,7 @@ def main():
     col1, col2 = st.columns([1, 1])
     
     with col1:
-        st.subheader(" Upload Image")
+        st.subheader("Upload Image")
         
         # File uploader
         uploaded_file = st.file_uploader(
@@ -229,7 +228,7 @@ def main():
             st.text(f"Image size: {image.size[0]} x {image.size[1]} pixels")
     
     with col2:
-        st.subheader(" Generated Caption")
+        st.subheader("Generated Caption")
 
         if uploaded_file is not None:
             # Initialize session state
@@ -239,12 +238,12 @@ def main():
                 st.session_state.caption = ""
 
             # Generate button
-            if st.button(" Generate Caption", use_container_width=True):
+            if st.button("Generate Caption", use_container_width=True):
                 st.session_state.caption_generated = True
 
             # Generate caption if button was clicked
             if st.session_state.caption_generated:
-                with st.spinner(" AI is analyzing the image..."):
+                with st.spinner("AI is analyzing the image..."):
                     try:
                         # Load model
                         processor, model, device = load_model(model_choice)
@@ -264,12 +263,12 @@ def main():
                         st.session_state.caption = caption
 
                         # Display result
-                        st.success(" Caption generated successfully!")
+                        st.success("Caption generated successfully!")
 
                         # Caption box
                         st.markdown(f"""
                         <div class="caption-box">
-                            <h3> Caption:</h3>
+                            <h3>Caption:</h3>
                             <p style="font-size: 22px; font-weight: bold; color: #1976d2;">
                                 {caption}
                             </p>
@@ -282,7 +281,7 @@ def main():
                         col_a, col_b = st.columns(2)
 
                         with col_a:
-                            if st.button(" Generate Another", use_container_width=True):
+                            if st.button("Generate Another", use_container_width=True):
                                 st.session_state.caption_generated = False
                                 st.session_state.caption = ""
                                 st.rerun()
@@ -294,7 +293,7 @@ def main():
                         # Generate multiple captions
                         if st.checkbox("Generate Multiple Captions (3 variations)"):
                             with st.spinner("Generating variations..."):
-                                st.markdown("###  Caption Variations:")
+                                st.markdown("### Caption Variations:")
 
                                 # Generate diverse captions using sampling
                                 temperatures = [0.7, 1.0, 1.3]  # Different temperatures for diversity
@@ -334,20 +333,20 @@ def main():
                                     attempts += 1
 
                     except Exception as e:
-                        st.error(f" Error generating caption: {str(e)}")
+                        st.error(f"Error generating caption: {str(e)}")
                         st.info("Try uploading a different image or check model settings.")
         else:
-            st.info(" Upload an image to get started!")
+            st.info("Upload an image to get started!")
             
             # Example section
             st.markdown("---")
             st.markdown("### Example Use Cases:")
             st.markdown("""
-            -  Social media post descriptions
-            -  Accessibility for visually impaired
-            -  Automatic image organization
-            -  Image search and indexing
-            -  Content management systems
+            - Social media post descriptions
+            - Accessibility for visually impaired
+            - Automatic image organization
+            - Image search and indexing
+            - Content management systems
             """)
     
     # Footer

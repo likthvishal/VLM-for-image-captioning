@@ -33,10 +33,16 @@ class Flickr8kDataset(Dataset):
                 if not line or line.startswith('#'):
                     continue
 
-                parts = line.split('|', 1)
-                if len(parts) != 2:
+                # Try different delimiters: comma, pipe, tab
+                parts = None
+                if ',' in line:
+                    parts = line.split(',', 1)
+                elif '|' in line:
+                    parts = line.split('|', 1)
+                elif '\t' in line:
                     parts = line.split('\t', 1)
-                if len(parts) != 2:
+
+                if parts is None or len(parts) != 2:
                     continue
 
                 image_name, caption = parts
@@ -51,6 +57,12 @@ class Flickr8kDataset(Dataset):
                     })
 
         print(f"Loaded {len(self.data)} image-caption pairs")
+
+        if len(self.data) == 0:
+            raise ValueError(f"No valid image-caption pairs found! Check that:\n"
+                           f"1. Captions file exists: {captions_file}\n"
+                           f"2. Images directory exists: {images_dir}\n"
+                           f"3. Image files match the names in captions file")
 
     def __len__(self):
         return len(self.data)

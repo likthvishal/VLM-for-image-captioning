@@ -247,7 +247,7 @@ python -c "import torch; import transformers; import streamlit; print('All depen
 
 ### Live Demo
 
-🚀 **Try the live application:** [Image Captioning Demo on Streamlit Cloud](https://vlm-image-captioning.streamlit.app)
+**Try the live application:** [Image Captioning Demo on Streamlit Cloud](https://vlm-image-captioning.streamlit.app)
 
 ### Running Locally
 
@@ -720,6 +720,6 @@ For questions, issues, or contributions, please visit the [GitHub repository](ht
 **Rich Captions:** Detailed, context-aware descriptions of natural scenes
 **Production Ready:** Complete training pipeline with checkpoint management
  **Interactive Demo:** User-friendly Streamlit web interface
-📈**Comprehensive Evaluation:** Multiple metrics and visualizations included
+**Comprehensive Evaluation:** Multiple metrics and visualizations included
 
 **Built with PyTorch & Transformers | Fine-tuned BLIP Model | Interactive Streamlit UI**

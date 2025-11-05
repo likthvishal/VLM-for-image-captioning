@@ -12,6 +12,8 @@ from PIL import Image
 import os
 from tqdm import tqdm
 import json
+import time
+from datetime import timedelta
 from custom_vlm import VisionLanguageModel, CustomVLMProcessor
 
 
@@ -122,6 +124,7 @@ def train_epoch(model, dataloader, optimizer, device, epoch, total_epochs):
     """
     model.train()
     total_loss = 0
+    epoch_start_time = time.time()
     progress_bar = tqdm(dataloader, desc=f"Epoch {epoch}/{total_epochs}")
 
     for batch_idx, batch in enumerate(progress_bar):
@@ -145,9 +148,20 @@ def train_epoch(model, dataloader, optimizer, device, epoch, total_epochs):
         total_loss += loss.item()
         avg_loss = total_loss / (batch_idx + 1)
 
-        progress_bar.set_postfix({'loss': f'{avg_loss:.4f}'})
+        # Calculate time estimates
+        elapsed_time = time.time() - epoch_start_time
+        batches_done = batch_idx + 1
+        batches_total = len(dataloader)
+        time_per_batch = elapsed_time / batches_done
+        eta_seconds = time_per_batch * (batches_total - batches_done)
 
-    return total_loss / len(dataloader)
+        progress_bar.set_postfix({
+            'loss': f'{avg_loss:.4f}',
+            'eta': f'{int(eta_seconds)}s'
+        })
+
+    epoch_time = time.time() - epoch_start_time
+    return total_loss / len(dataloader), epoch_time
 
 
 def validate(model, dataloader, device):
@@ -156,6 +170,7 @@ def validate(model, dataloader, device):
     """
     model.eval()
     total_loss = 0
+    val_start_time = time.time()
 
     with torch.no_grad():
         for batch in tqdm(dataloader, desc="Validating"):
@@ -163,7 +178,8 @@ def validate(model, dataloader, device):
             outputs = model(**batch)
             total_loss += outputs.loss.item()
 
-    return total_loss / len(dataloader)
+    val_time = time.time() - val_start_time
+    return total_loss / len(dataloader), val_time
 
 
 def train_custom_vlm(
@@ -252,26 +268,43 @@ def train_custom_vlm(
     best_val_loss = float('inf')
     train_losses = []
     val_losses = []
+    epoch_times = []
+    training_start_time = time.time()
 
     for epoch in range(1, num_epochs + 1):
+        epoch_total_start = time.time()
         print(f"\nEpoch {epoch}/{num_epochs}")
         print("-" * 70)
 
         # Train
-        train_loss = train_epoch(model, train_loader, optimizer, device, epoch, num_epochs)
+        train_loss, train_time = train_epoch(model, train_loader, optimizer, device, epoch, num_epochs)
         train_losses.append(train_loss)
 
         # Validate
-        val_loss = validate(model, val_loader, device)
+        val_loss, val_time = validate(model, val_loader, device)
         val_losses.append(val_loss)
 
         # Update scheduler
         scheduler.step()
 
+        # Calculate timing statistics
+        epoch_total_time = time.time() - epoch_total_start
+        epoch_times.append(epoch_total_time)
+        avg_epoch_time = sum(epoch_times) / len(epoch_times)
+        total_elapsed = time.time() - training_start_time
+        epochs_remaining = num_epochs - epoch
+        eta_seconds = avg_epoch_time * epochs_remaining
+
         print(f"\nEpoch {epoch} Summary:")
         print(f"  Train Loss: {train_loss:.4f}")
         print(f"  Val Loss: {val_loss:.4f}")
         print(f"  LR: {optimizer.param_groups[0]['lr']:.6f}")
+        print(f"  Train Time: {timedelta(seconds=int(train_time))}")
+        print(f"  Val Time: {timedelta(seconds=int(val_time))}")
+        print(f"  Epoch Time: {timedelta(seconds=int(epoch_total_time))}")
+        print(f"  Avg Epoch Time: {timedelta(seconds=int(avg_epoch_time))}")
+        print(f"  Total Elapsed: {timedelta(seconds=int(total_elapsed))}")
+        print(f"  ETA: {timedelta(seconds=int(eta_seconds))} ({epochs_remaining} epochs remaining)")
 
         # Save best model
         if val_loss < best_val_loss:
@@ -292,6 +325,9 @@ def train_custom_vlm(
             }, checkpoint_path)
             print(f"  Saved checkpoint at epoch {epoch}")
 
+    # Calculate total training time
+    total_training_time = time.time() - training_start_time
+
     # Save final model
     final_model_path = os.path.join(output_dir, "pytorch_model_final.bin")
     torch.save(model.state_dict(), final_model_path)
@@ -300,7 +336,9 @@ def train_custom_vlm(
     history = {
         'train_losses': train_losses,
         'val_losses': val_losses,
-        'best_val_loss': best_val_loss
+        'best_val_loss': best_val_loss,
+        'epoch_times': epoch_times,
+        'total_training_time': total_training_time
     }
     with open(os.path.join(output_dir, "training_history.json"), 'w') as f:
         json.dump(history, f, indent=2)
@@ -310,6 +348,10 @@ def train_custom_vlm(
     print("="*70)
     print(f"\nBest validation loss: {best_val_loss:.4f}")
     print(f"Model saved to: {output_dir}")
+    print(f"\nTotal Training Time: {timedelta(seconds=int(total_training_time))}")
+    print(f"Average Epoch Time: {timedelta(seconds=int(sum(epoch_times)/len(epoch_times)))}")
+    print(f"Fastest Epoch: {timedelta(seconds=int(min(epoch_times)))}")
+    print(f"Slowest Epoch: {timedelta(seconds=int(max(epoch_times)))}")
 
     return model, history
 

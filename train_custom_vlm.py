@@ -118,31 +118,42 @@ def collate_fn(batch):
     }
 
 
-def train_epoch(model, dataloader, optimizer, device, epoch, total_epochs):
+def train_epoch(model, dataloader, optimizer, device, epoch, total_epochs, scaler=None):
     """
-    Train for one epoch
+    Train for one epoch with mixed precision support
     """
     model.train()
     total_loss = 0
     epoch_start_time = time.time()
     progress_bar = tqdm(dataloader, desc=f"Epoch {epoch}/{total_epochs}")
+    use_amp = scaler is not None
 
     for batch_idx, batch in enumerate(progress_bar):
         # Move batch to device
         batch = {k: v.to(device) for k, v in batch.items()}
 
-        # Forward pass
-        outputs = model(**batch)
-        loss = outputs.loss
+        optimizer.zero_grad()
+
+        # Forward pass with automatic mixed precision
+        if use_amp:
+            with torch.cuda.amp.autocast():
+                outputs = model(**batch)
+                loss = outputs.loss
+        else:
+            outputs = model(**batch)
+            loss = outputs.loss
 
         # Backward pass
-        optimizer.zero_grad()
-        loss.backward()
-
-        # Gradient clipping
-        torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
-
-        optimizer.step()
+        if use_amp:
+            scaler.scale(loss).backward()
+            scaler.unscale_(optimizer)
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+            scaler.step(optimizer)
+            scaler.update()
+        else:
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+            optimizer.step()
 
         # Update metrics
         total_loss += loss.item()
@@ -164,9 +175,9 @@ def train_epoch(model, dataloader, optimizer, device, epoch, total_epochs):
     return total_loss / len(dataloader), epoch_time
 
 
-def validate(model, dataloader, device):
+def validate(model, dataloader, device, use_amp=False):
     """
-    Validate the model
+    Validate the model with mixed precision support
     """
     model.eval()
     total_loss = 0
@@ -175,8 +186,14 @@ def validate(model, dataloader, device):
     with torch.no_grad():
         for batch in tqdm(dataloader, desc="Validating"):
             batch = {k: v.to(device) for k, v in batch.items()}
-            outputs = model(**batch)
-            total_loss += outputs.loss.item()
+
+            if use_amp:
+                with torch.cuda.amp.autocast():
+                    outputs = model(**batch)
+                    total_loss += outputs.loss.item()
+            else:
+                outputs = model(**batch)
+                total_loss += outputs.loss.item()
 
     val_time = time.time() - val_start_time
     return total_loss / len(dataloader), val_time
@@ -187,13 +204,17 @@ def train_custom_vlm(
     images_dir="Images",
     output_dir="custom_vlm_finetuned",
     num_epochs=20,
-    batch_size=16,
+    batch_size=32,
     learning_rate=5e-5,
     warmup_ratio=0.1,
-    save_every=5
+    save_every=5,
+    use_mixed_precision=True
 ):
     """
     Main training function
+
+    Args:
+        use_mixed_precision: Enable fp16 mixed precision training for 2x speedup (requires CUDA)
     """
     print("="*70)
     print("CUSTOM VLM TRAINING")
@@ -202,6 +223,14 @@ def train_custom_vlm(
     # Setup device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"\nDevice: {device}")
+
+    # Setup mixed precision training
+    use_amp = use_mixed_precision and torch.cuda.is_available()
+    scaler = torch.cuda.amp.GradScaler() if use_amp else None
+    if use_amp:
+        print("Mixed Precision: ENABLED (fp16)")
+    else:
+        print("Mixed Precision: DISABLED (fp32)")
 
     # Create output directory
     os.makedirs(output_dir, exist_ok=True)
@@ -277,11 +306,11 @@ def train_custom_vlm(
         print("-" * 70)
 
         # Train
-        train_loss, train_time = train_epoch(model, train_loader, optimizer, device, epoch, num_epochs)
+        train_loss, train_time = train_epoch(model, train_loader, optimizer, device, epoch, num_epochs, scaler)
         train_losses.append(train_loss)
 
         # Validate
-        val_loss, val_time = validate(model, val_loader, device)
+        val_loss, val_time = validate(model, val_loader, device, use_amp)
         val_losses.append(val_loss)
 
         # Update scheduler

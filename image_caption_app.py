@@ -10,13 +10,6 @@ from transformers import BlipProcessor, BlipForConditionalGeneration
 import io
 import os
 
-try:
-    from custom_vlm import load_custom_vlm, generate_caption_custom
-    CUSTOM_VLM_AVAILABLE = True
-except ImportError:
-    CUSTOM_VLM_AVAILABLE = False
-    print("Custom VLM not available")
-
 # Page configuration
 st.set_page_config(
     page_title="VLM Image Captioning",
@@ -61,43 +54,10 @@ st.markdown("""
 
 @st.cache_resource
 def load_model(model_choice):
-    """Load BLIP or Custom VLM model (cached for performance)"""
+    """Load BLIP model (cached for performance)"""
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    if model_choice == "Custom VLM":
-        # Load custom VLM
-        if not CUSTOM_VLM_AVAILABLE:
-            st.error("Custom VLM not available. Please ensure custom_vlm.py is in the directory.")
-            st.warning("Falling back to pretrained BLIP.")
-            processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-base")
-            model = BlipForConditionalGeneration.from_pretrained(
-                "Salesforce/blip-image-captioning-base",
-                use_safetensors=True
-            ).to(device)
-            return processor, model, device
-
-        # Try to load fine-tuned custom VLM, otherwise load base
-        model_path_local = "custom_vlm_finetuned"
-
-        try:
-            processor, model = load_custom_vlm(model_path_local, device)
-            st.success("Loaded fine-tuned Custom VLM from local directory")
-        except Exception:
-            try:
-                processor, model = load_custom_vlm(None, device)
-                st.info("Loaded base Custom VLM (not fine-tuned)")
-            except Exception as e:
-                st.error(f"Error loading Custom VLM: {str(e)}")
-                st.warning("Falling back to pretrained BLIP.")
-                processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-base")
-                model = BlipForConditionalGeneration.from_pretrained(
-                    "Salesforce/blip-image-captioning-base",
-                    use_safetensors=True
-                ).to(device)
-
-        return processor, model, device
-
-    elif model_choice == "Pretrained BLIP":
+    if model_choice == "Pretrained BLIP":
         processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-base")
         model = BlipForConditionalGeneration.from_pretrained(
             "Salesforce/blip-image-captioning-base",
@@ -133,18 +93,6 @@ def load_model(model_choice):
 def generate_caption(image, processor, model, device, max_length=20, num_beams=1, temperature=1.0, do_sample=False):
     """Generate caption for an image"""
 
-    # Check if it's custom VLM
-    if CUSTOM_VLM_AVAILABLE and hasattr(model, 'vision_encoder'):
-        # Use custom VLM generation function
-        return generate_caption_custom(
-            image, processor, model, device,
-            max_length=max_length,
-            num_beams=num_beams,
-            temperature=temperature,
-            do_sample=do_sample
-        )
-
-    # Standard BLIP generation
     # Process image
     inputs = processor(image, return_tensors="pt").to(device)
 
@@ -191,8 +139,6 @@ def main():
         
         # Model selection
         model_options = ["Pretrained BLIP", "Fine-tuned BLIP"]
-        if CUSTOM_VLM_AVAILABLE:
-            model_options.append("Custom VLM")
 
         model_choice = st.selectbox(
             "Choose Model",
@@ -244,11 +190,7 @@ def main():
         st.markdown("**Model Info:**")
         device_name = "GPU" if torch.cuda.is_available() else "CPU"
         st.text(f"Device: {device_name}")
-
-        if model_choice == "Custom VLM":
-            st.text(f"Model: ViT + GPT-2")
-        else:
-            st.text(f"Model: BLIP-Base")
+        st.text(f"Model: BLIP-Base")
     
     # Main content
     col1, col2 = st.columns([1, 1])
